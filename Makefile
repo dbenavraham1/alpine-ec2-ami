@@ -23,7 +23,7 @@ build/convert:
 	# which only supports JSON
 	@echo "#!`pwd`/.py3/bin/python" > build/convert
 	@echo "import yaml, json, sys" >> build/convert
-	@echo "y = yaml.load(open(sys.argv[1]))" >> build/convert
+	@echo "y = yaml.full_load(open(sys.argv[1]))" >> build/convert
 	@echo "for k in ['ami_access','deploy_regions','add_repos','add_pkgs','add_svcs']:" >> build/convert
 	@echo "  if k in y and isinstance(y[k], list):" >> build/convert
 	@echo "    y[k] = ','.join(str(x) for x in y[k])" >> build/convert

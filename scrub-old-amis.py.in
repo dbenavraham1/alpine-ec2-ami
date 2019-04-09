@@ -11,7 +11,7 @@ AMI_RE = re.compile("^Alpine-(\d+\.\d+)(?:-r(\d+))?-Hardened-EC2")
 
 # Load current AMI version from config
 with open("alpine-ami.yaml") as fp:
-    ami_cfg = yaml.load(fp)["variables"]
+    ami_cfg = yaml.full_load(fp)["variables"]
     current = (float(ami_cfg["alpine_release"]), int(ami_cfg["ami_release"]))
 
 

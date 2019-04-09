@@ -7,7 +7,7 @@ ROW_TEMPLATE = "| {release} | {region} | [{ami}]({uri}) |"
 
 
 with open("release.yaml") as fp:
-    releases = yaml.load(fp)
+    releases = yaml.full_load(fp)
 
 for metadata in releases.values():
     release = str(metadata["alpine-release"])
