@@ -3,12 +3,7 @@
 
 set -eu
 
-MIN_VERSION="3.9"
-MIN_RELEASE="3.9.0"
-
-: ${VERSION:="${MIN_VERSION}"}   # unless otherwise specified
-: ${RELEASE:="${MIN_RELEASE}"}   # unless otherwise specified
-
+# TODO: profile-ize these
 : ${APK_TOOLS_URI:="https://github.com/alpinelinux/apk-tools/releases/download/v2.10.3/apk-tools-2.10.3-x86_64-linux.tar.gz"}
 : ${APK_TOOLS_SHA256:="4d0b2cda606720624589e6171c374ec6d138867e03576d9f518dddde85c33839"}
 : ${ALPINE_KEYS:="http://dl-cdn.alpinelinux.org/alpine/v3.9/main/x86_64/alpine-keys-2.1-r1.apk"}
@@ -76,25 +71,11 @@ make_filesystem() {
 }
 
 setup_repositories() {
-    local target="$1"     # target directory
-    local add_repos="$2"  # extra repo lines, comma separated
+    local target="$1"   # target directory
+    local repos="$2"    # repositories
 
     mkdir -p "$target"/etc/apk/keys
-
-    if [ "$VERSION" = 'edge' ]; then
-        cat > "$target"/etc/apk/repositories <<EOF
-http://dl-cdn.alpinelinux.org/alpine/edge/main
-http://dl-cdn.alpinelinux.org/alpine/edge/community
-http://dl-cdn.alpinelinux.org/alpine/edge/testing
-EOF
-    else
-        cat > "$target"/etc/apk/repositories <<EOF
-http://dl-cdn.alpinelinux.org/alpine/v$VERSION/main
-http://dl-cdn.alpinelinux.org/alpine/v$VERSION/community
-EOF
-    fi
-
-    echo "$add_repos" | tr , "\012" >> "$target"/etc/apk/repositories
+    echo "$repos" > "$target"/etc/apk/repositories
 }
 
 fetch_keys() {
@@ -132,25 +113,11 @@ setup_chroot() {
 
 install_core_packages() {
     local target="$1"    # target directory
-    local add_pkgs="$2"  # extra packages, space separated
+    local pkgs="$2"      # packages, space separated
 
-    # Most from: https://git.alpinelinux.org/cgit/alpine-iso/tree/alpine-virt.packages
-    #
-    # sudo - to allow alpine user to become root, disallow root SSH logins
-    # tiny-ec2-bootstrap - to bootstrap system from EC2 metadata
-    #
-    chroot "$target" apk --no-cache add \
-        linux-virt \
-        alpine-mirrors \
-        chrony \
-        haveged \
-        nvme-cli \
-        openssh \
-        sudo \
-        tiny-ec2-bootstrap \
-        tzdata \
-        $(echo "$add_pkgs" | tr , ' ')
+    chroot "$target" apk --no-cache add $pkgs
 
+    # TODO: use BOOTSTRAP
     chroot "$target" apk --no-cache add --no-scripts syslinux
 
     # Disable starting getty for physical ttys because they're all inaccessible
@@ -171,6 +138,7 @@ setup_mdev() {
     sed -n -i -e '/# fallback/r /tmp/nvme-ebs-mdev.conf' -e 1x -e '2,${x;p}' -e '${x;p}' "$target"/etc/mdev.conf
 }
 
+# TODO: use alpine-conf setup-*?
 create_initfs() {
     local target="$1"
 
@@ -186,6 +154,7 @@ create_initfs() {
     chroot "$target" /sbin/mkinitfs $(basename $(find "$target"/lib/modules/* -maxdepth 0))
 }
 
+# TODO: use alpine-conf setup-*?
 setup_extlinux() {
     local target="$1"
 
@@ -209,6 +178,7 @@ setup_extlinux() {
         "$target"/etc/update-extlinux.conf
 }
 
+# TODO: use alpine-conf setup-*?
 install_extlinux() {
     local target="$1"
 
@@ -239,20 +209,14 @@ EOF
 
 enable_services() {
     local target="$1"
-    local add_svcs="$2"
+    local svcs="$2"
 
-    rc_add "$target" default chronyd networking sshd tiny-ec2-bootstrap
-    rc_add "$target" sysinit devfs dmesg hwdrivers mdev
-    rc_add "$target" boot acpid bootmisc haveged hostname hwclock modules swap sysctl syslog
-    rc_add "$target" shutdown killprocs mount-ro savecache
-
-    if [ -n "$add_svcs" ]; then
-        local lvl_svcs; for lvl_svcs in $(echo "$add_svcs" | tr : ' '); do
-            rc_add "$target" $(echo "$lvl_svcs" | tr =, ' ')
-        done
-    fi
+    local lvl_svcs; for lvl_svcs in $svcs; do
+        rc_add "$target" $(echo "$lvl_svcs" | tr =, ' ')
+    done
 }
 
+# TODO: allow profile to specify alternate ALPINE_USER
 create_alpine_user() {
     local target="$1"
 
@@ -312,14 +276,9 @@ version_sorted() {
 }
 
 main() {
-    [ "$VERSION" != 'edge' ] && {
-        version_sorted $MIN_VERSION $VERSION || die "Minimum Alpine version is '$MIN_RELEASE'"
-        version_sorted $MIN_RELEASE $RELEASE || die "Minimum Alpine release is '$MIN_RELEASE'"
-    }
-
-    local add_repos="$ADD_REPOS"
-    local add_pkgs="$ADD_PKGS"
-    local add_svcs="$ADD_SVCS"
+    local repos=$(echo "$REPOS" | tr , "\n")
+    local pkgs=$(echo "$PKGS" | tr , ' ')
+    local svcs=$(echo "$SVCS" | tr : ' ')
 
     local device="/dev/xvdf"
     local target="/mnt/target"
@@ -335,7 +294,7 @@ main() {
     make_filesystem "$device" "$target"
 
     einfo "Configuring Alpine repositories"
-    setup_repositories "$target" "$add_repos"
+    setup_repositories "$target" "$repos"
 
     einfo "Fetching Alpine signing keys"
     fetch_keys "$target"
@@ -346,7 +305,7 @@ main() {
     setup_chroot "$target"
 
     einfo "Installing core packages"
-    install_core_packages "$target" "$add_pkgs"
+    install_core_packages "$target" "$pkgs"
 
     einfo "Configuring and enabling boot loader"
     create_initfs "$target"
@@ -357,7 +316,7 @@ main() {
     setup_mdev "$target"
     setup_fstab "$target"
     setup_networking "$target"
-    enable_services "$target" "$add_svcs"
+    enable_services "$target" "$svcs"
     create_alpine_user "$target"
     configure_ntp "$target"
 

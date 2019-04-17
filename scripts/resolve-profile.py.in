@@ -1,0 +1,82 @@
+@PYTHON@
+
+import json, os, shutil, sys, time, yaml
+
+profile = sys.argv[1]
+
+# where we store profile's builds
+profile_dir = os.path.join( os.path.dirname(os.path.realpath(__file__)), 'profile')
+
+# fold these list vars down to scalar
+fold_list_keys = [
+    'ami_access', 'ami_regions'
+]
+
+# parse stdin yaml and resolve refs
+builds = yaml.full_load(sys.stdin.read())['builds']
+
+# clean out any old builds
+if os.path.exists(profile_dir):
+    shutil.rmtree(profile_dir)
+os.makedirs(profile_dir)
+
+# for each build
+for bk, b in builds.items():
+
+    # make profile build directory
+    build_dir = os.path.join(profile_dir, bk)
+    os.makedirs(build_dir)
+    vars_file = os.path.join(build_dir, 'vars.json')
+
+    # populate profile build vars
+    b['profile'] = profile
+    b['profile_build'] = bk
+
+    # edge-related temporal substitutions
+    if b['end_of_life'] == '@TODAY@':
+        b['end_of_life'] = time.strftime('%Y-%m-%d', time.gmtime())
+    if b['revision'] == '@NOW@':
+        b['revision'] = time.strftime('%Y%m%d%H%M%S', time.gmtime())
+
+    # fold list vars to scalars
+    for k in fold_list_keys:
+        if k in b and isinstance(b[k], list):
+            b[k] = ','.join(str(x) for x in b[k])
+
+    # fold 'repos' hash to scalar
+    repos = []
+    for repo, v in b['repos'].items():
+        if v == None:                   # repo without alias
+            repos.append(repo)
+        elif v != False:                # repo with alias (False == skip repo)
+            v.lstrip('@')
+            repos.append(f"@{v} {repo}")
+    b['repos'] = ','.join(str(x) for x in repos)
+
+    # fold 'pkgs' hash to scalar
+    pkgs = []
+    for pkg, v in b['pkgs'].items():
+        if v == None:                   # unpinned package
+            pkgs.append(pkg)
+        elif v != False:                # repo-pinned package (False == skip package)
+            v.lstrip('@')
+            pkgs.append(f'{pkg}@{v}')
+    b['pkgs'] = ','.join(str(x) for x in pkgs)
+
+    # fold 'svcs' hash to scalar
+    svcs = {
+        'sysinit': [],
+        'boot': [],
+        'default': [],
+        'shutdown': []
+    }
+    for svc, v in b['svcs'].items():
+        if v == None:                   # service in default runlevel
+            svcs['default'].append(svc)
+        elif v != False:                # service in specified runlevel (False == skip service)
+            svcs[v].append(svc)
+    b['svcs'] = ':'.join(str(l) + '=' + ','.join(str(s) for s in ss) for l, ss in svcs.items())
+
+    # write build def json file
+    with open(vars_file, 'w') as out:
+        json.dump(b, out, indent=4, separators=(',', ': '))

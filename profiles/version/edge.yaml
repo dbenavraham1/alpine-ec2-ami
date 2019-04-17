@@ -1,0 +1,23 @@
+### Edge Version Variables
+
+_version-edge: &_version-edge
+  # from current version
+  <<: *_version-current
+  # overrides
+  version:      edge
+  release:      edge
+  end_of_life:  '@TODAY@'
+  revision:     '@NOW@'
+
+  # version repos/pkgs/svcs for edge
+  repos: &_version-edge-repos
+    http://dl-cdn.alpinelinux.org/alpine/edge/main:
+    http://dl-cdn.alpinelinux.org/alpine/edge/community:
+    http://dl-cdn.alpinelinux.org/alpine/edge/testing:
+  pkgs: &_version-edge-pkgs
+    <<: *_version-current-pkgs
+    # overrides (if any)
+  svcs: &_version-edge-svcs
+    <<: *_version-current-svcs
+    # overrides (if any)
+

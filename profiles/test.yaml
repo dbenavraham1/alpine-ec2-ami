@@ -1,0 +1,48 @@
+### Profile for Testing Builds
+
+# Profile overrides
+test: &test
+  build_region: us-west-2
+  build_subnet: subnet-033a30d7b5220d177
+  ami_regions:
+    - us-east-1
+    - us-west-2
+
+# Build definitions
+builds:
+  test-current-x86_64:
+    <<: *_base-current
+    <<: *_version-current
+    <<: *_x86_64-current
+    repos:
+      <<: *_base-current-repos
+      <<: *_version-current-repos
+      <<: *_x86_64-current-repos
+    pkgs:
+      <<: *_base-current-pkgs
+      <<: *_version-current-pkgs
+      <<: *_x86_64-current-pkgs
+    svcs:
+      <<: *_base-current-svcs
+      <<: *_version-current-svcs
+      <<: *_x86_64-current-svcs
+    <<: *test
+    revision: 'test'
+  test-edge-x86_64:
+    <<: *_base-edge
+    <<: *_version-edge
+    <<: *_x86_64-edge
+    repos:
+      <<: *_base-edge-repos
+      <<: *_version-edge-repos
+      <<: *_x86_64-edge-repos
+    pkgs:
+      <<: *_base-edge-pkgs
+      <<: *_version-edge-pkgs
+      <<: *_x86_64-edge-pkgs
+    svcs:
+      <<: *_base-edge-svcs
+      <<: *_version-edge-svcs
+      <<: *_x86_64-edge-svcs
+    <<: *test
+

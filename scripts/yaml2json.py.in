@@ -1,0 +1,9 @@
+@PYTHON@
+
+# Simple little YAML/JSON converter so we can maintain our Packer configs in a
+# sane format that allows comments but also use Packer which only supports JSON
+
+import yaml, json, sys
+
+y = yaml.full_load(open(sys.argv[1]))
+json.dump(y, sys.stdout, indent=4, separators=(',', ': '))

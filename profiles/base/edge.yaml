@@ -1,0 +1,18 @@
+### Edge Base Variables
+
+_base-edge: &_base-edge
+  # base from current (at the moment)
+  <<: *_base-current
+  # overrides (if any)
+
+  # base repos/pkgs/svcs for edge
+  repos: &_base-edge-repos
+    <<: *_base-current-repos
+    # overrides (if any)
+  pkgs: &_base-edge-pkgs
+    <<: *_base-current-pkgs
+    # overrides (if any)
+  svcs: &_base-edge-svcs
+    <<: *_base-current-svcs
+    # overrides (if any)
+

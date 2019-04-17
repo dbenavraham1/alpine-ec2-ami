@@ -1,0 +1,18 @@
+### x86_64 Edge Variables
+
+_x86_64-edge: &_x86_64-edge
+  # base from current (at the moment)
+  <<: *_x86_64-current
+  # overrides (if any)
+
+  # x86_64 repos/pkgs/svcs for edge
+  repos: &_x86_64-edge-repos
+    <<: *_x86_64-current-repos
+    # overrides (if any)
+  pkgs: &_x86_64-edge-pkgs
+    <<: *_x86_64-current-pkgs
+    # overrides (if any)
+  svcs: &_x86_64-edge-svcs
+    <<: *_x86_64-current-pkgs
+    # overrides (if any)
+

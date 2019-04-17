@@ -1,0 +1,18 @@
+### aarch64 Edge Variables
+
+_aarch64-edge: &_aarch64-edge
+  # base on current (for now)
+  <<: *_aarch64-current
+  # overrides (if any)
+
+  # aarch64 repos/pkgs/svcs for edge
+  repos: &_aarch64-edge-repos
+    <<: *_aarch64-current-repos
+    # overrides (if any)
+  pkgs: &_aarch64-edge-pkgs
+    <<: *_aarch64-current-pkgs
+    # overrides (if any)
+  svcs: &_aarch64-edge-svcs
+    <<: *_aarch64-current-svcs
+    # overrides (if any)
+

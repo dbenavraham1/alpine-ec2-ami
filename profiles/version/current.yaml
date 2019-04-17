@@ -1,0 +1,13 @@
+### Current Version Variables
+
+_version-current: &_version-current
+  # from latest version
+  <<: *_version-3_9
+  # re-anchor for current
+  repos: &_version-current-repos
+    <<: *_version-3_9-repos
+  pkgs: &_version-current-pkgs
+    <<: *_version-3_9-pkgs
+  svcs: &_version-current-svcs
+    <<: *_version-3_9-svcs
+
