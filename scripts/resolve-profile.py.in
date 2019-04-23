@@ -1,19 +1,26 @@
 @PYTHON@
 
-import json, os, shutil, sys, time, yaml
+import json, os, shutil, sys, time
+from pyhocon import ConfigFactory
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
 
 profile = sys.argv[1]
 
-# where we store profile's builds
-profile_dir = os.path.join( os.path.dirname(os.path.realpath(__file__)), 'profile')
+# path to the profile config file
+profile_conf = os.path.join(script_dir, '..', 'profiles', profile + '.conf')
 
+# where we store profile's builds
+profile_dir = os.path.join(script_dir, 'profile')
+
+# TODO? make these dicts instead?
 # fold these list vars down to scalar
 fold_list_keys = [
     'ami_access', 'ami_regions'
 ]
 
-# parse stdin yaml and resolve refs
-builds = yaml.full_load(sys.stdin.read())['builds']
+# parse/resolve HOCON profile config, we need just the 'builds' portion
+builds = ConfigFactory.parse_file(profile_conf)['builds']
 
 # clean out any old builds
 if os.path.exists(profile_dir):
@@ -46,9 +53,11 @@ for bk, b in builds.items():
     # fold 'repos' hash to scalar
     repos = []
     for repo, v in b['repos'].items():
-        if v == None:                   # repo without alias
+        if v == True:
+            # repo without alias
             repos.append(repo)
-        elif v != False:                # repo with alias (False == skip repo)
+        elif not (v == False or v == None):
+            # repo with alias (skip repo when false/null)
             v.lstrip('@')
             repos.append(f"@{v} {repo}")
     b['repos'] = ','.join(str(x) for x in repos)
@@ -56,9 +65,11 @@ for bk, b in builds.items():
     # fold 'pkgs' hash to scalar
     pkgs = []
     for pkg, v in b['pkgs'].items():
-        if v == None:                   # unpinned package
+        if v == True:
+            # unpinned package
             pkgs.append(pkg)
-        elif v != False:                # repo-pinned package (False == skip package)
+        elif not (v == False or v == None):
+            # repo-pinned package (skip pkg when false/null)
             v.lstrip('@')
             pkgs.append(f'{pkg}@{v}')
     b['pkgs'] = ','.join(str(x) for x in pkgs)
@@ -71,9 +82,11 @@ for bk, b in builds.items():
         'shutdown': []
     }
     for svc, v in b['svcs'].items():
-        if v == None:                   # service in default runlevel
+        if v == True:
+            # service in default runlevel
             svcs['default'].append(svc)
-        elif v != False:                # service in specified runlevel (False == skip service)
+        elif not (v == False or v == None):
+            # service in specified runlevel (skip svc when false/null)
             svcs[v].append(svc)
     b['svcs'] = ':'.join(str(l) + '=' + ','.join(str(s) for s in ss) for l, ss in svcs.items())
 

@@ -1,0 +1,6 @@
+### aarch64 vars, revision 1
+
+arch                = "aarch64"
+build_arch          = "arm64"
+build_instance_type = "a1.medium"
+bootloader          = "grub"

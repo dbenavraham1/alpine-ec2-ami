@@ -1,0 +1,16 @@
+### edge vars
+
+# based on current
+include "current"
+
+# add edge-specific tweaks...
+version =     edge
+release =     edge
+end_of_life = "@TODAY@"
+revision =    "@NOW@"
+repos = null
+repos {
+  "http://dl-cdn.alpinelinux.org/alpine/edge/main":       true
+  "http://dl-cdn.alpinelinux.org/alpine/edge/community":  true
+  "http://dl-cdn.alpinelinux.org/alpine/edge/testing":    true
+}
