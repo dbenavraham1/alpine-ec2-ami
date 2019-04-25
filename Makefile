@@ -18,8 +18,8 @@ build: $(SCRIPTS)
 build/profile: build build/resolve-profile.py $(CORE_PROFILES) $(TARGET_PROFILES)
 	build/resolve-profile.py $(PROFILE)
 
-build/packer.json: build build/yaml2json.py packer.yaml
-	build/yaml2json.py packer.yaml > build/packer.json
+build/packer.json: build packer.conf
+	build/.py3/bin/pyhocon -i packer.conf -f json > build/packer.json
 
 %.py: %.py.in build
 	sed "s|@PYTHON@|#!`pwd`/build/.py3/bin/python|" $< > $@

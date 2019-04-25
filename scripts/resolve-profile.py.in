@@ -13,13 +13,6 @@ profile_conf = os.path.join(script_dir, '..', 'profiles', profile + '.conf')
 # where we store profile's builds
 profile_dir = os.path.join(script_dir, 'profile')
 
-# TODO? make these dicts instead?
-# fold these list vars down to scalar
-fold_list_keys = [
-    'ami_access', 'ami_regions'
-]
-
-# parse/resolve HOCON profile config, we need just the 'builds' portion
 builds = ConfigFactory.parse_file(profile_conf)['builds']
 
 # clean out any old builds
@@ -27,6 +20,25 @@ if os.path.exists(profile_dir):
     shutil.rmtree(profile_dir)
 os.makedirs(profile_dir)
 
+# func to fold dict down to scalar
+def fold(dict, fmt):
+    a = []
+    for k, v in dict.items():
+        if v == True:
+            a.append(k)
+        elif not (v == None or v == False):
+            a.append(fmt.format(k, v))
+    return ','.join(str(x) for x in a)
+
+# fold these dicts vars down to scalar, based on item values
+fold_dicts = {
+    'ami_access': '{0}',
+    'ami_regions': '{0}',
+    'repos': '@{1} {0}',
+    'pkgs': '{0}@{1}'
+}
+
+# parse/resolve HOCON profile config, we need just the 'builds' portion
 # for each build
 for bk, b in builds.items():
 
@@ -45,48 +57,20 @@ for bk, b in builds.items():
     if b['revision'] == '@NOW@':
         b['revision'] = time.strftime('%Y%m%d%H%M%S', time.gmtime())
 
-    # fold list vars to scalars
-    for k in fold_list_keys:
-        if k in b and isinstance(b[k], list):
-            b[k] = ','.join(str(x) for x in b[k])
+    # fold dict vars to scalars
+    for dk, fmt in fold_dicts.items():
+        b[dk] = fold(b[dk], fmt)
 
-    # fold 'repos' hash to scalar
-    repos = []
-    for repo, v in b['repos'].items():
-        if v == True:
-            # repo without alias
-            repos.append(repo)
-        elif not (v == False or v == None):
-            # repo with alias (skip repo when false/null)
-            v.lstrip('@')
-            repos.append(f"@{v} {repo}")
-    b['repos'] = ','.join(str(x) for x in repos)
-
-    # fold 'pkgs' hash to scalar
-    pkgs = []
-    for pkg, v in b['pkgs'].items():
-        if v == True:
-            # unpinned package
-            pkgs.append(pkg)
-        elif not (v == False or v == None):
-            # repo-pinned package (skip pkg when false/null)
-            v.lstrip('@')
-            pkgs.append(f'{pkg}@{v}')
-    b['pkgs'] = ','.join(str(x) for x in pkgs)
-
-    # fold 'svcs' hash to scalar
-    svcs = {
-        'sysinit': [],
-        'boot': [],
-        'default': [],
-        'shutdown': []
-    }
+    # fold 'svcs' dict to scalar
+    svcs = {}
     for svc, v in b['svcs'].items():
         if v == True:
             # service in default runlevel
             svcs['default'].append(svc)
-        elif not (v == False or v == None):
+        elif not (v == None or v == False):
             # service in specified runlevel (skip svc when false/null)
+            if v not in svcs.keys():
+                svcs[v] = []
             svcs[v].append(svc)
     b['svcs'] = ':'.join(str(l) + '=' + ','.join(str(s) for s in ss) for l, ss in svcs.items())
 

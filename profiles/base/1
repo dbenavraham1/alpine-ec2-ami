@@ -3,12 +3,12 @@
 # Profile/Build
 profile       = null
 profile_build = null
+revision      = 'r0'
 
 # Versioning
 version     = null
 release     = null
 end_of_life = null
-revision    = null
 
 # Architecture
 arch        = null
@@ -19,7 +19,7 @@ build_region          = null
 build_subnet          = null
 build_security_group  = null
 build_instance_type   = "t3.nano"
-build_public_ip       = null      # was ""
+build_public_ip       = null
 build_user            = "ec2-user"
 build_ami_name        = "amzn2-ami-hvm-2.0.*-gp2"
 build_ami_owner       = "137112412989"
@@ -33,11 +33,15 @@ ami_desc_suffix = " - https://github.com/mcrute/alpine-ec2-ami"
 ami_volume_size = "1"
 ami_encrypt     = "false"
 ami_user        = "alpine"
-ami_access      = null
-ami_regions     = null
+ami_access      = {}
+ami_regions     = {}
 
 # AMI configuration
-bootloader = null
+apk_tools           = null
+apk_tools_sha256    = null
+alpine_keys         = null
+alpine_keys_sha256  = null
+bootloader          = null
 repos {}
 pkgs {
   linux-virt          = true
@@ -52,10 +56,10 @@ pkgs {
 }
 svcs {
   # sysinit
-  devfs      = "sysinit"
-  dmesg      = "sysinit"
-  hwdrivers  = "sysinit"
-  mdev       = "sysinit"
+  devfs     = "sysinit"
+  dmesg     = "sysinit"
+  hwdrivers = "sysinit"
+  mdev      = "sysinit"
   # boot
   acpid     = "boot"
   bootmisc  = "boot"
@@ -67,10 +71,10 @@ svcs {
   sysctl    = "boot"
   syslog    = "boot"
   # default
-  chronyd     = "default"
-  networking  = "default"
-  sshd        = "default"
-  tiny-ec2-bootstrap = "default"
+  chronyd             = "default"
+  networking          = "default"
+  sshd                = "default"
+  tiny-ec2-bootstrap  = "default"
   # shutdown
   killprocs = "shutdown"
   mount-ro  = "shutdown"

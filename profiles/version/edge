@@ -4,11 +4,12 @@
 include "current"
 
 # add edge-specific tweaks...
-version =     edge
-release =     edge
+version     = "edge"
+release     = "edge"
 end_of_life = "@TODAY@"
-revision =    "@NOW@"
-repos = null
+revision    = "@NOW@"
+
+repos = null  # undo "current" repos
 repos {
   "http://dl-cdn.alpinelinux.org/alpine/edge/main":       true
   "http://dl-cdn.alpinelinux.org/alpine/edge/community":  true

@@ -3,12 +3,6 @@
 
 set -eu
 
-# TODO: profile-ize these
-: ${APK_TOOLS_URI:="https://github.com/alpinelinux/apk-tools/releases/download/v2.10.3/apk-tools-2.10.3-x86_64-linux.tar.gz"}
-: ${APK_TOOLS_SHA256:="4d0b2cda606720624589e6171c374ec6d138867e03576d9f518dddde85c33839"}
-: ${ALPINE_KEYS:="http://dl-cdn.alpinelinux.org/alpine/v3.9/main/x86_64/alpine-keys-2.1-r1.apk"}
-: ${ALPINE_KEYS_SHA256:="9c7bc5d2e24c36982da7aa49b3cfcb8d13b20f7a03720f25625fa821225f5fbc"}
-
 die() {
     printf '\033[1;31mERROR:\033[0m %s\n' "$@" >&2  # bold red
     exit 1
@@ -53,9 +47,9 @@ validate_block_device() {
 
 fetch_apk_tools() {
     local store="$(mktemp -d)"
-    local tarball="$(basename $APK_TOOLS_URI)"
+    local tarball="$(basename $APK_TOOLS)"
 
-    wgets "$APK_TOOLS_URI" "$APK_TOOLS_SHA256" "$store/$tarball"
+    wgets "$APK_TOOLS" "$APK_TOOLS_SHA256" "$store/$tarball"
     tar -C "$store" -xf "$store/$tarball"
 
     find "$store" -name apk
@@ -117,8 +111,7 @@ install_core_packages() {
 
     chroot "$target" apk --no-cache add $pkgs
 
-    # TODO: use BOOTSTRAP
-    chroot "$target" apk --no-cache add --no-scripts syslinux
+    chroot "$target" apk --no-cache add --no-scripts $BOOTLOADER
 
     # Disable starting getty for physical ttys because they're all inaccessible
     # anyhow. With this configuration boot messages will still display in the
@@ -138,9 +131,11 @@ setup_mdev() {
     sed -n -i -e '/# fallback/r /tmp/nvme-ebs-mdev.conf' -e 1x -e '2,${x;p}' -e '${x;p}' "$target"/etc/mdev.conf
 }
 
-# TODO: use alpine-conf setup-*?
+# TODO: use alpine-conf setup-*? (based on $BOOTLOADER)
 create_initfs() {
     local target="$1"
+
+    # TODO: other useful mkinitfs stuff?
 
     # Create ENA feature for mkinitfs
     echo "kernel/drivers/net/ethernet/amazon" > \
@@ -154,7 +149,7 @@ create_initfs() {
     chroot "$target" /sbin/mkinitfs $(basename $(find "$target"/lib/modules/* -maxdepth 0))
 }
 
-# TODO: use alpine-conf setup-*?
+# TODO: this is for syslinux only, there's likely a grub equivalence
 setup_extlinux() {
     local target="$1"
 
@@ -178,7 +173,7 @@ setup_extlinux() {
         "$target"/etc/update-extlinux.conf
 }
 
-# TODO: use alpine-conf setup-*?
+# TODO: this is for syslinux only, there's likely a grub equivalence
 install_extlinux() {
     local target="$1"
 
@@ -216,7 +211,8 @@ enable_services() {
     done
 }
 
-# TODO: allow profile to specify alternate ALPINE_USER
+# TODO: allow profile to specify alternate ALPINE_USER?
+# NOTE: tiny-ec2-bootstrap will need to be updated to support that!
 create_alpine_user() {
     local target="$1"
 
@@ -270,11 +266,6 @@ cleanup() {
     umount "$target"
 }
 
-version_sorted() {
-    # falsey if $1 version > $2 version
-    printf "%s\n%s" $1 $2 | sort -VC
-}
-
 main() {
     local repos=$(echo "$REPOS" | tr , "\n")
     local pkgs=$(echo "$PKGS" | tr , ' ')
@@ -307,6 +298,7 @@ main() {
     einfo "Installing core packages"
     install_core_packages "$target" "$pkgs"
 
+    # TODO: syslinux vs grub, maybe use setup-* scripts?
     einfo "Configuring and enabling boot loader"
     create_initfs "$target"
     setup_extlinux "$target"
